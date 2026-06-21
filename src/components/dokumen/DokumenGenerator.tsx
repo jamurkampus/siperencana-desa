@@ -214,7 +214,7 @@ export function DokumenGenerator({ kegiatanId, existingDokumen }: Props) {
       KAK: "KERANGKA ACUAN KERJA (KAK)", SK_PANITIA: "SURAT KEPUTUSAN PANITIA",
     };
 
-    const children = [
+    const children: (InstanceType<typeof Paragraph> | InstanceType<typeof Table>)[] = [
       new Paragraph({
         text: "PEMERINTAH DESA " + namaDesa.toUpperCase(),
         heading: HeadingLevel.HEADING_1,
@@ -225,7 +225,7 @@ export function DokumenGenerator({ kegiatanId, existingDokumen }: Props) {
         heading: HeadingLevel.HEADING_2,
         alignment: AlignmentType.CENTER,
       }),
-      new Paragraph({ text: String(kegiatan.namaKegiatan ?? ""), alignment: AlignmentType.CENTER, bold: true } as unknown as ConstructorParameters<typeof Paragraph>[0]),
+      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(kegiatan.namaKegiatan ?? ""), bold: true })] }),
       new Paragraph({ text: "" }),
     ];
 
@@ -268,7 +268,7 @@ export function DokumenGenerator({ kegiatanId, existingDokumen }: Props) {
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
     children.push(new Paragraph({ text: "" }));
-    children.push(new Paragraph({ text: kepDesa, alignment: AlignmentType.RIGHT, bold: true } as unknown as ConstructorParameters<typeof Paragraph>[0]));
+    children.push(new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: kepDesa, bold: true })] }));
 
     const doc = new Document({ sections: [{ children }] });
     const blob = await Packer.toBlob(doc);
