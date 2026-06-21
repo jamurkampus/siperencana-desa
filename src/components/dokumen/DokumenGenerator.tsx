@@ -106,7 +106,7 @@ export function DokumenGenerator({ kegiatanId, existingDokumen }: Props) {
 
   async function generatePDF(kegiatan: Record<string, unknown>, jenis: string) {
     const { default: jsPDF } = await import("jspdf");
-    // @ts-expect-error autotable types
+    // @ts-ignore - jspdf-autotable extends jsPDF prototype at runtime
     await import("jspdf-autotable");
     const doc = new jsPDF();
     const kec = (kegiatan.desa as Record<string, string>)?.kecamatan ?? "";
@@ -169,7 +169,7 @@ export function DokumenGenerator({ kegiatanId, existingDokumen }: Props) {
         Number(r.total).toLocaleString("id-ID"),
       ]);
       const totalRAB = (kegiatan.rab as Array<{total: string}>).reduce((s, r) => s + Number(r.total), 0);
-      // @ts-expect-error autotable
+      // @ts-ignore - jspdf-autotable extends jsPDF prototype at runtime
       doc.autoTable({
         startY: y,
         head: [["No", "Uraian", "Satuan", "Volume", "Harga Satuan", "Jumlah (Rp)"]],
@@ -179,7 +179,7 @@ export function DokumenGenerator({ kegiatanId, existingDokumen }: Props) {
         headStyles: { fillColor: [2, 117, 197] },
         footStyles: { fontStyle: "bold" },
       });
-      // @ts-expect-error autotable
+      // @ts-ignore - jspdf-autotable extends jsPDF prototype at runtime
       y = doc.lastAutoTable.finalY + 10;
     } else if (kegiatan.latarBelakang) {
       y += 5;
