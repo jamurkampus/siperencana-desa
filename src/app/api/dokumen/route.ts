@@ -82,7 +82,7 @@ function generateKonten(jenis: string, kegiatan: any) {
     },
     jadwal: kegiatan.jadwal,
     panitia: kegiatan.panitia,
-    rab: kegiatan.rab.map((r: { uraian: string; satuan: string; volume: number; hargaSatuan: unknown; total: unknown; keterangan: string | null }) => ({
+    rab: kegiatan.rab.map((r: { uraian: string; satuan: string; volume: number; hargaSatuan: { toString: () => string }; total: { toString: () => string }; keterangan: string | null }) => ({
       ...r,
       hargaSatuan: r.hargaSatuan.toString(),
       total: r.total.toString(),
