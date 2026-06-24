@@ -6,8 +6,9 @@ import { formatRupiah, labelBidang, labelSumberDana, colorStatus, labelStatus } 
 import Link from "next/link";
 import {
   FileText, TrendingUp, CheckCircle, PlayCircle,
-  PlusCircle, ArrowRight, AlertCircle, Clock
+  PlusCircle, ArrowRight, AlertCircle, Users
 } from "lucide-react";
+import { getServerSession } from "next-auth";
 
 async function getDashboardData() {
   const [
@@ -20,6 +21,7 @@ async function getDashboardData() {
     recentKegiatan,
     desa,
     tahunAktif,
+    bukuTamu,
   ] = await Promise.all([
     prisma.kegiatan.count(),
     prisma.kegiatan.count({ where: { status: "BERJALAN" } }),
@@ -38,6 +40,11 @@ async function getDashboardData() {
     }),
     prisma.desa.findFirst(),
     prisma.tahunAnggaran.findFirst({ where: { isAktif: true } }),
+    prisma.bukuTamu.findMany({
+      take: 10,
+      orderBy: { waktuMasuk: "desc" },
+      include: { user: { select: { nama: true, instansi: true } } },
+    }),
   ]);
 
   return {
@@ -47,11 +54,14 @@ async function getDashboardData() {
       bidang: b.bidang, count: b._count.id,
       anggaran: Number(b._sum.anggaran ?? 0),
     })),
-    recentKegiatan, desa, tahunAktif,
+    recentKegiatan, desa, tahunAktif, bukuTamu,
   };
 }
 
 export default async function DashboardPage() {
+  const session = await getServerSession();
+  const role = (session?.user as { role?: string })?.role;
+  const isAdmin = role === "ADMIN";
   const data = await getDashboardData();
 
   const statCards = [
@@ -103,15 +113,16 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="flex flex-wrap gap-2 mt-5">
-          <Link href="/kegiatan/tambah" className="bg-white text-primary-700 text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 hover:bg-primary-50 transition-colors">
-            <PlusCircle size={14} /> Tambah Kegiatan
-          </Link>
-          <Link href="/dokumen" className="bg-primary-600 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 hover:bg-primary-500 transition-colors border border-primary-500">
-            <FileText size={14} /> Buat Dokumen
-          </Link>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-wrap gap-2 mt-5">
+            <Link href="/kegiatan/tambah" className="bg-white text-primary-700 text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 hover:bg-primary-50 transition-colors">
+              <PlusCircle size={14} /> Tambah Kegiatan
+            </Link>
+            <Link href="/dokumen" className="bg-primary-600 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 hover:bg-primary-500 transition-colors border border-primary-500">
+              <FileText size={14} /> Buat Dokumen
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Stat cards */}
@@ -149,9 +160,6 @@ export default async function DashboardPage() {
             <div className="text-center py-10 text-gray-400">
               <FileText size={32} className="mx-auto mb-3 opacity-50" />
               <p className="text-sm">Belum ada kegiatan</p>
-              <Link href="/kegiatan/tambah" className="btn-primary mt-3 inline-flex">
-                <PlusCircle size={14} /> Tambah Pertama
-              </Link>
             </div>
           ) : (
             <div className="space-y-3">
@@ -175,47 +183,61 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Bidang breakdown */}
-        <div className="card">
-          <h3 className="section-title">Per Bidang</h3>
-          {data.perBidang.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">Belum ada data</p>
-          ) : (
-            <div className="space-y-3">
-              {data.perBidang.map((b) => {
-                const pct = data.totalKegiatan > 0 ? (b.count / data.totalKegiatan) * 100 : 0;
-                return (
-                  <div key={b.bidang}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-600 font-medium truncate pr-2">
-                        {(labelBidang[b.bidang as keyof typeof labelBidang] ?? b.bidang).split(" ").slice(0, 2).join(" ")}
-                      </span>
-                      <span className="text-gray-400 shrink-0">{b.count}x</span>
+        {/* Sidebar kanan */}
+        <div className="space-y-6">
+          {/* Per Bidang */}
+          <div className="card">
+            <h3 className="section-title">Per Bidang</h3>
+            {data.perBidang.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">Belum ada data</p>
+            ) : (
+              <div className="space-y-3">
+                {data.perBidang.map((b) => {
+                  const pct = data.totalKegiatan > 0 ? (b.count / data.totalKegiatan) * 100 : 0;
+                  return (
+                    <div key={b.bidang}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-600 font-medium truncate pr-2">
+                          {(labelBidang[b.bidang as keyof typeof labelBidang] ?? b.bidang).split(" ").slice(0, 2).join(" ")}
+                        </span>
+                        <span className="text-gray-400 shrink-0">{b.count}x</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary-500 rounded-full transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">{formatRupiah(b.anggaran)}</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {data.kegiatanDraft > 0 && (
-            <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2">
-              <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs font-medium text-amber-700">{data.kegiatanDraft} kegiatan masih draft</p>
-                <p className="text-xs text-amber-600 mt-0.5">Perlu ditinjau dan diajukan</p>
+                  );
+                })}
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+            )}
+
+            {isAdmin && data.kegiatanDraft > 0 && (
+              <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2">
+                <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-amber-700">{data.kegiatanDraft} kegiatan masih draft</p>
+                  <p className="text-xs text-amber-600 mt-0.5">Perlu ditinjau dan diajukan</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Buku Tamu — hanya admin yang lihat */}
+          {isAdmin && (
+            <div className="card">
+              <div className="flex items-center gap-2 mb-4">
+                <Users size={16} className="text-primary-600" />
+                <h3 className="section-title mb-0">Buku Tamu</h3>
+              </div>
+              {data.bukuTamu.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Belum ada tamu</p>
+              ) : (
+                <div className="space-y-3">
+                  {data.bukuTamu.map((t) => (
+                    <div key={t.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50">
+                      <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
+                        {t.user.nama.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800">{t.user.nama}</p>
+                        <p className="text-xs
