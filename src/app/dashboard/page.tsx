@@ -240,4 +240,20 @@ export default async function DashboardPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800">{t.user.nama}</p>
-                        <p className="text-xs
+                        <p className="text-xs text-gray-400">{t.user.instansi ?? "-"}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{t.keperluan}</p>
+                        <p className="text-xs text-gray-300 mt-0.5">
+                          {new Date(t.waktuMasuk).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
