@@ -24,7 +24,7 @@ Jawab langsung tanpa pengantar berlebihan. Berikan konten yang siap pakai.`;
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         contents: [
