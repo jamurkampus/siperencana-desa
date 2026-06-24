@@ -21,9 +21,9 @@ enum BidangKegiatan {
 }
 
 enum SumberDana {
-  ADD    // Alokasi Dana Desa
-  DD     // Dana Desa (APBN)
-  PAD    // Pendapatan Asli Desa
+  ADD
+  DD
+  PAD
   APBD_KAB
   APBD_PROV
   BANTUAN_PROVINSI
@@ -56,7 +56,39 @@ enum StatusDokumen {
   DITANDATANGANI
 }
 
+enum RoleUser {
+  ADMIN
+  TAMU
+}
+
 // ─── MODELS ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  nama      String
+  instansi  String?
+  role      RoleUser @default(TAMU)
+  isAktif   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bukuTamu BukuTamu[]
+}
+
+model BukuTamu {
+  id          String    @id @default(cuid())
+  userId      String
+  keperluan   String
+  waktuMasuk  DateTime  @default(now())
+  waktuKeluar DateTime?
+  keterangan  String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
 
 model Desa {
   id              String   @id @default(cuid())
@@ -129,7 +161,7 @@ model Kegiatan {
 model JadwalKegiatan {
   id          String   @id @default(cuid())
   kegiatanId  String
-  bulan       Int      // 1-12
+  bulan       Int
   keterangan  String?
   createdAt   DateTime @default(now())
 
@@ -142,7 +174,7 @@ model Panitia {
   id         String   @id @default(cuid())
   kegiatanId String
   nama       String
-  jabatan    String   // Ketua, Sekretaris, Anggota, dll
+  jabatan    String
   nip        String?
   nik        String?
   createdAt  DateTime @default(now())
@@ -175,7 +207,7 @@ model Dokumen {
   jenis        JenisDokumen
   nomor        String?
   judul        String
-  konten       Json          // Stores document content/data
+  konten       Json
   status       StatusDokumen @default(DRAFT)
   fileUrl      String?
   tanggalBuat  DateTime      @default(now())
@@ -193,6 +225,6 @@ model AiHistory {
   id        String   @id @default(cuid())
   prompt    String   @db.Text
   response  String   @db.Text
-  konteks   String?  // kegiatan name for context
+  konteks   String?
   createdAt DateTime @default(now())
 }
