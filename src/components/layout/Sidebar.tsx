@@ -2,6 +2,7 @@
 // src/components/layout/Sidebar.tsx
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   LayoutDashboard, FileText, FolderOpen,
   PlusCircle, BarChart2, Settings, ChevronRight, Map
@@ -11,13 +12,19 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/kegiatan", label: "Daftar Kegiatan", icon: FolderOpen },
-  { href: "/kegiatan/tambah", label: "Tambah Kegiatan", icon: PlusCircle },
+  { href: "/kegiatan/tambah", label: "Tambah Kegiatan", icon: PlusCircle, adminOnly: true },
   { href: "/dokumen", label: "Dokumen", icon: FileText },
   { href: "/laporan", label: "Laporan", icon: BarChart2 },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string })?.role;
+  const isAdmin = role === "ADMIN";
+  const nama = session?.user?.name ?? "User";
+
+  const filteredNav = navItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <>
@@ -39,7 +46,7 @@ export function Sidebar() {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           <div className="px-3 py-2 text-xs font-semibold text-primary-400 uppercase tracking-wider">Menu Utama</div>
-          {navItems.map((item) => {
+          {filteredNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
@@ -63,23 +70,25 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="px-3 py-4 border-t border-primary-800">
-          <Link
-            href="/pengaturan"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-300 hover:bg-primary-800 hover:text-white transition-colors"
-          >
-            <Settings size={17} />
-            <span>Pengaturan</span>
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/pengaturan"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-300 hover:bg-primary-800 hover:text-white transition-colors"
+            >
+              <Settings size={17} />
+              <span>Pengaturan</span>
+            </Link>
+          )}
           <div className="px-3 mt-3">
-            <div className="text-xs text-primary-500">Kaur Perencanaan</div>
-            <div className="text-xs text-primary-300 font-medium mt-0.5">Lamri, S.P.</div>
+            <div className="text-xs text-primary-500">{role === "ADMIN" ? "Administrator" : "Tamu"}</div>
+            <div className="text-xs text-primary-300 font-medium mt-0.5">{nama}</div>
           </div>
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 flex">
-        {navItems.slice(0, 4).map((item) => {
+        {filteredNav.slice(0, 4).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (
