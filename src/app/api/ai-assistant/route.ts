@@ -12,41 +12,36 @@ Jawab langsung tanpa pengantar berlebihan. Berikan konten yang siap pakai.`;
 
     const userPrompt = buildPrompt(tipe, konteks, prompt);
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "GEMINI_API_KEY belum dikonfigurasi" }, { status: 500 });
+      return NextResponse.json({ error: "GROQ_API_KEY belum dikonfigurasi" }, { status: 500 });
     }
 
-    const model = "gemini-1.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-    const response = await fetch(url, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
-          },
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1500,
-        },
+        temperature: 0.7,
+        max_tokens: 1500,
       }),
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      console.error("Gemini API error:", err);
-      return NextResponse.json({ error: err.error?.message ?? "Gemini API error" }, { status: 500 });
+      console.error("Groq API error:", err);
+      return NextResponse.json({ error: err.error?.message ?? "Groq API error" }, { status: 500 });
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const text = data.choices?.[0]?.message?.content ?? "";
 
     if (!text) {
       return NextResponse.json({ error: "AI tidak menghasilkan respons. Coba lagi." }, { status: 500 });
@@ -71,34 +66,10 @@ Anggaran: Rp ${Number(konteks?.anggaran ?? 0).toLocaleString("id-ID")}
 `;
 
   const prompts: Record<string, string> = {
-    latar_belakang: `Berdasarkan data kegiatan berikut:\n${base}\n
-Buatkan latar belakang kegiatan yang komprehensif (3-4 paragraf) yang mencakup:
-1. Kondisi existing / permasalahan yang ada
-2. Dasar hukum dan kebijakan yang mendasari
-3. Urgensi pelaksanaan kegiatan
-${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
-
-    tujuan: `Berdasarkan data kegiatan berikut:\n${base}\n
-Buatkan tujuan kegiatan yang SMART (Specific, Measurable, Achievable, Relevant, Time-bound) dalam format poin-poin yang jelas dan terukur (3-5 tujuan).
-${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
-
-    manfaat: `Berdasarkan data kegiatan berikut:\n${base}\n
-Buatkan uraian manfaat kegiatan yang mencakup:
-1. Manfaat langsung bagi masyarakat sasaran
-2. Manfaat jangka panjang bagi pembangunan desa
-3. Dampak ekonomi / sosial yang diharapkan
-Format dalam poin-poin (4-6 manfaat).
-${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
-
-    uraian: `Berdasarkan data kegiatan berikut:\n${base}\n
-Buatkan uraian lengkap kegiatan yang meliputi:
-1. Ruang lingkup kegiatan
-2. Metode pelaksanaan
-3. Tahapan/proses pelaksanaan
-4. Output yang diharapkan
-Format paragraf yang mengalir dan informatif.
-${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
-
+    latar_belakang: `Berdasarkan data kegiatan berikut:\n${base}\nBuatkan latar belakang kegiatan yang komprehensif (3-4 paragraf) yang mencakup:\n1. Kondisi existing / permasalahan yang ada\n2. Dasar hukum dan kebijakan yang mendasari\n3. Urgensi pelaksanaan kegiatan${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
+    tujuan: `Berdasarkan data kegiatan berikut:\n${base}\nBuatkan tujuan kegiatan yang SMART dalam format poin-poin (3-5 tujuan).${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
+    manfaat: `Berdasarkan data kegiatan berikut:\n${base}\nBuatkan uraian manfaat kegiatan dalam poin-poin (4-6 manfaat).${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
+    uraian: `Berdasarkan data kegiatan berikut:\n${base}\nBuatkan uraian lengkap kegiatan meliputi ruang lingkup, metode, tahapan, dan output.${extraPrompt ? `\nKonteks tambahan: ${extraPrompt}` : ""}`,
     default: extraPrompt || `Bantu saya menyusun konten untuk kegiatan:\n${base}`,
   };
 
