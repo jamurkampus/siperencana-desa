@@ -18,13 +18,12 @@ Jawab langsung tanpa pengantar berlebihan. Berikan konten yang siap pakai.`;
     }
 
     const model = "gemini-1.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         contents: [
@@ -43,7 +42,7 @@ Jawab langsung tanpa pengantar berlebihan. Berikan konten yang siap pakai.`;
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       console.error("Gemini API error:", err);
-      throw new Error(err.error?.message ?? "Gemini API error");
+      return NextResponse.json({ error: err.error?.message ?? "Gemini API error" }, { status: 500 });
     }
 
     const data = await response.json();
