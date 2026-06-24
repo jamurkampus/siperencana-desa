@@ -17,13 +17,15 @@ Jawab langsung tanpa pengantar berlebihan. Berikan konten yang siap pakai.`;
       return NextResponse.json({ error: "GEMINI_API_KEY belum dikonfigurasi" }, { status: 500 });
     }
 
-    // Gemini 1.5 Flash — gratis, cepat, cocok untuk bahasa Indonesia formal
     const model = "gemini-1.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
         contents: [
           {
