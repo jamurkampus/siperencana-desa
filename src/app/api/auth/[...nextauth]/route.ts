@@ -25,7 +25,6 @@ const handler = NextAuth({
         const passwordValid = await bcrypt.compare(credentials.password, user.password);
         if (!passwordValid) return null;
 
-        // Catat ke buku tamu kalau role TAMU
         if (user.role === "TAMU") {
           await prisma.bukuTamu.create({
             data: {
@@ -48,15 +47,15 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as { role: string }).role;
-        token.instansi = (user as { instansi: string }).instansi;
+        token.role = (user as unknown as { role: string }).role;
+        token.instansi = (user as unknown as { instansi: string }).instansi;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { role: string }).role = token.role as string;
-        (session.user as { instansi: string }).instansi = token.instansi as string;
+        (session.user as unknown as { role: string }).role = token.role as string;
+        (session.user as unknown as { instansi: string }).instansi = token.instansi as string;
       }
       return session;
     },
@@ -66,7 +65,7 @@ const handler = NextAuth({
   },
   session: {
     strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 jam
+    maxAge: 8 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 });
