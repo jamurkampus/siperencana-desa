@@ -5,19 +5,12 @@ import { formatRupiah, labelBidang, colorStatus, labelStatus } from "@/lib/utils
 import Link from "next/link";
 import { FileText, TrendingUp, CheckCircle, PlayCircle, PlusCircle, ArrowRight, AlertCircle, Users, MapPin, Monitor } from "lucide-react";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 async function getDashboardData() {
   const [
-    totalKegiatan,
-    kegiatanBerjalan,
-    kegiatanSelesai,
-    kegiatanDraft,
-    aggAnggaran,
-    perBidang,
-    recentKegiatan,
-    desa,
-    tahunAktif,
-    bukuTamu,
+    totalKegiatan, kegiatanBerjalan, kegiatanSelesai, kegiatanDraft,
+    aggAnggaran, perBidang, recentKegiatan, desa, tahunAktif, bukuTamu,
   ] = await Promise.all([
     prisma.kegiatan.count(),
     prisma.kegiatan.count({ where: { status: "BERJALAN" } }),
@@ -25,18 +18,10 @@ async function getDashboardData() {
     prisma.kegiatan.count({ where: { status: "DRAFT" } }),
     prisma.kegiatan.aggregate({ _sum: { anggaran: true } }),
     prisma.kegiatan.groupBy({ by: ["bidang"], _count: { id: true }, _sum: { anggaran: true } }),
-    prisma.kegiatan.findMany({
-      take: 6,
-      orderBy: { updatedAt: "desc" },
-      include: { tahunAnggaran: { select: { tahun: true } } },
-    }),
+    prisma.kegiatan.findMany({ take: 6, orderBy: { updatedAt: "desc" }, include: { tahunAnggaran: { select: { tahun: true } } } }),
     prisma.desa.findFirst(),
     prisma.tahunAnggaran.findFirst({ where: { isAktif: true } }),
-    prisma.bukuTamu.findMany({
-      take: 20,
-      orderBy: { waktuMasuk: "desc" },
-      include: { user: { select: { nama: true, instansi: true } } },
-    }),
+    prisma.bukuTamu.findMany({ take: 20, orderBy: { waktuMasuk: "desc" }, include: { user: { select: { nama: true, instansi: true } } } }),
   ]);
 
   return {
@@ -60,7 +45,7 @@ function parseKeterangan(keterangan: string | null) {
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string })?.role;
   const isAdmin = role === "ADMIN";
   const data = await getDashboardData();
