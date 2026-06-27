@@ -1,10 +1,10 @@
 // src/app/api/auth/[...nextauth]/route.ts
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -16,22 +16,32 @@ const handler = NextAuth({
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
-        });
+        const users = await prisma.$queryRawUnsafe<{
+          id: string;
+          username: string;
+          password: string;
+          nama: string;
+          instansi: string | null;
+          role: string;
+          isAktif: boolean;
+        }[]>(
+          `SELECT id, username, password, nama, instansi, role, "isAktif" FROM "User" WHERE username = $1 LIMIT 1`,
+          credentials.username
+        );
 
+        const user = users[0];
         if (!user || !user.isAktif) return null;
 
         const passwordValid = await bcrypt.compare(credentials.password, user.password);
         if (!passwordValid) return null;
 
         if (user.role === "TAMU") {
-          await prisma.bukuTamu.create({
-            data: {
-              userId: user.id,
-              keperluan: credentials.keperluan || "Tidak disebutkan",
-            },
-          });
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "BukuTamu" (id, "userId", keperluan, "waktuMasuk")
+             VALUES (gen_random_uuid()::text, $1, $2, NOW())`,
+            user.id,
+            credentials.keperluan || "Tidak disebutkan"
+          );
         }
 
         return {
@@ -68,6 +78,7 @@ const handler = NextAuth({
     maxAge: 8 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
