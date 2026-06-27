@@ -7,11 +7,9 @@ import {
   formatRupiah, formatTanggal, labelBidang, labelSumberDana,
   colorStatus, labelStatus, getBulanNama,
 } from "@/lib/utils";
-import {
-  Edit3, FileText, MapPin, Calendar, Wallet,
-  Users, ArrowLeft, Download, FileCheck, Package
-} from "lucide-react";
+import { Edit3, FileText, MapPin, Calendar, Wallet, ArrowLeft, Package } from "lucide-react";
 import { DokumenGenerator } from "@/components/dokumen/DokumenGenerator";
+import { HapusKegiatan } from "@/components/forms/HapusKegiatan";
 
 export default async function KegiatanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,7 +32,6 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20 md:pb-0">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <Link href="/kegiatan" className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg mt-0.5">
@@ -47,9 +44,7 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
               </span>
             )}
             <h2 className="text-xl font-bold text-gray-800">{kegiatan.namaKegiatan}</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              TA {kegiatan.tahunAnggaran.tahun} · Desa {kegiatan.desa.namaDesa}
-            </p>
+            <p className="text-sm text-gray-500 mt-1">TA {kegiatan.tahunAnggaran.tahun} · Desa {kegiatan.desa.namaDesa}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -59,10 +54,10 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
           <Link href={`/kegiatan/${id}/edit`} className="btn-secondary hidden md:flex">
             <Edit3 size={14} /> Edit
           </Link>
+          <HapusKegiatan id={id} nama={kegiatan.namaKegiatan} />
         </div>
       </div>
 
-      {/* Info cards grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { icon: MapPin, label: "Lokasi", value: kegiatan.lokasi, color: "text-blue-600 bg-blue-50" },
@@ -83,7 +78,6 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
         })}
       </div>
 
-      {/* Detail info */}
       <div className="card">
         <h3 className="section-title">Informasi Kegiatan</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
@@ -121,12 +115,9 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* RAB */}
       {kegiatan.rab.length > 0 && (
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="section-title mb-0">Rencana Anggaran Biaya (RAB)</h3>
-          </div>
+          <h3 className="section-title mb-4">Rencana Anggaran Biaya (RAB)</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -162,7 +153,6 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
         </div>
       )}
 
-      {/* Panitia */}
       {kegiatan.panitia.length > 0 && (
         <div className="card">
           <h3 className="section-title">Susunan Panitia / TPK</h3>
@@ -182,7 +172,6 @@ export default async function KegiatanDetailPage({ params }: { params: Promise<{
         </div>
       )}
 
-      {/* Dokumen Generator */}
       <DokumenGenerator kegiatanId={id} existingDokumen={kegiatan.dokumen} />
     </div>
   );
