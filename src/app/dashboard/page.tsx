@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah, labelBidang, colorStatus, labelStatus } from "@/lib/utils";
 import Link from "next/link";
-import { FileText, TrendingUp, CheckCircle, PlayCircle, PlusCircle, ArrowRight, AlertCircle, Users } from "lucide-react";
+import { FileText, TrendingUp, CheckCircle, PlayCircle, PlusCircle, ArrowRight, AlertCircle, Users, MapPin, Monitor } from "lucide-react";
 import { getServerSession } from "next-auth";
 
 async function getDashboardData() {
@@ -33,7 +33,7 @@ async function getDashboardData() {
     prisma.desa.findFirst(),
     prisma.tahunAnggaran.findFirst({ where: { isAktif: true } }),
     prisma.bukuTamu.findMany({
-      take: 10,
+      take: 20,
       orderBy: { waktuMasuk: "desc" },
       include: { user: { select: { nama: true, instansi: true } } },
     }),
@@ -44,6 +44,18 @@ async function getDashboardData() {
     totalAnggaran: Number(aggAnggaran._sum.anggaran ?? 0),
     perBidang: perBidang.map((b) => ({ bidang: b.bidang, count: b._count.id, anggaran: Number(b._sum.anggaran ?? 0) })),
     recentKegiatan, desa, tahunAktif, bukuTamu,
+  };
+}
+
+function parseKeterangan(keterangan: string | null) {
+  if (!keterangan) return { lokasi: null, device: null, ip: null };
+  const lokasiMatch = keterangan.match(/Lokasi: ([\d.-]+, [\d.-]+)/);
+  const deviceMatch = keterangan.match(/Device: ([^|]+)/);
+  const ipMatch = keterangan.match(/IP: (.+)$/);
+  return {
+    lokasi: lokasiMatch?.[1] ?? null,
+    device: deviceMatch?.[1]?.trim() ?? null,
+    ip: ipMatch?.[1]?.trim() ?? null,
   };
 }
 
@@ -178,24 +190,45 @@ export default async function DashboardPage() {
               <div className="flex items-center gap-2 mb-4">
                 <Users size={16} className="text-primary-600" />
                 <h3 className="section-title mb-0">Buku Tamu</h3>
+                <span className="ml-auto text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{data.bukuTamu.length}</span>
               </div>
               {data.bukuTamu.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">Belum ada tamu</p>
               ) : (
-                <div className="space-y-3">
-                  {data.bukuTamu.map((t) => (
-                    <div key={t.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50">
-                      <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
-                        {t.user.nama.charAt(0)}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {data.bukuTamu.map((t) => {
+                    const info = parseKeterangan(t.keterangan);
+                    return (
+                      <div key={t.id} className="border border-gray-100 rounded-xl p-3 hover:bg-gray-50">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
+                            {t.user.nama.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800">{t.user.nama}</p>
+                            <p className="text-xs text-gray-500">{t.user.instansi ?? "-"}</p>
+                          </div>
+                          <p className="text-xs text-gray-300 shrink-0">{new Date(t.waktuMasuk).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2 italic">{t.keperluan}</p>
+                        <div className="space-y-1">
+                          {info.lokasi && (
+                            <a href={`https://maps.google.com/?q=${info.lokasi}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                              <MapPin size={11} /> {info.lokasi}
+                            </a>
+                          )}
+                          {info.device && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                              <Monitor size={11} /> {info.device}
+                            </div>
+                          )}
+                          {info.ip && (
+                            <div className="text-xs text-gray-400 font-mono">IP: {info.ip}</div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800">{t.user.nama}</p>
-                        <p className="text-xs text-gray-400">{t.user.instansi ?? "-"}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{t.keperluan}</p>
-                        <p className="text-xs text-gray-300 mt-0.5">{new Date(t.waktuMasuk).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
