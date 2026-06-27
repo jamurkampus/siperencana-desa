@@ -1,27 +1,32 @@
-// src/app/api/db-push/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    // Bikin tabel User dan BukuTamu kalau belum ada
+    await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS "BukuTamu";`);
+    await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS "User";`);
+    await prisma.$executeRawUnsafe(`DROP TYPE IF EXISTS "RoleUser";`);
+    
+    await prisma.$executeRawUnsafe(`CREATE TYPE "RoleUser" AS ENUM ('ADMIN', 'TAMU');`);
+    
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "User" (
+      CREATE TABLE "User" (
         "id" TEXT NOT NULL,
-        "username" TEXT NOT NULL UNIQUE,
+        "username" TEXT NOT NULL,
         "password" TEXT NOT NULL,
         "nama" TEXT NOT NULL,
         "instansi" TEXT,
-        "role" TEXT NOT NULL DEFAULT 'TAMU',
+        "role" "RoleUser" NOT NULL DEFAULT 'TAMU',
         "isAktif" BOOLEAN NOT NULL DEFAULT true,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+        CONSTRAINT "User_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "User_username_key" UNIQUE ("username")
       );
     `);
 
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "BukuTamu" (
+      CREATE TABLE "BukuTamu" (
         "id" TEXT NOT NULL,
         "userId" TEXT NOT NULL,
         "keperluan" TEXT NOT NULL,
@@ -33,9 +38,8 @@ export async function GET() {
       );
     `);
 
-    return NextResponse.json({ message: "Tabel berhasil dibuat!" });
+    return NextResponse.json({ message: "Tabel berhasil dibuat ulang dengan benar!" });
   } catch (error) {
-    console.error(error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
