@@ -11,7 +11,6 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
-        keperluan: { label: "Keperluan", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
@@ -34,15 +33,6 @@ export const authOptions: NextAuthOptions = {
 
         const passwordValid = await bcrypt.compare(credentials.password, user.password);
         if (!passwordValid) return null;
-
-        if (user.role === "TAMU") {
-          await prisma.$executeRawUnsafe(
-            `INSERT INTO "BukuTamu" (id, "userId", keperluan, "waktuMasuk")
-             VALUES (gen_random_uuid()::text, $1, $2, NOW())`,
-            user.id,
-            credentials.keperluan || "Tidak disebutkan"
-          );
-        }
 
         return {
           id: user.id,
@@ -78,6 +68,18 @@ export const authOptions: NextAuthOptions = {
     maxAge: 8 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: true,
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
