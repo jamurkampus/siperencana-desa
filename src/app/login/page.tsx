@@ -48,7 +48,7 @@ export default function LoginPage() {
       },
       () => {
         setLokasiStatus("denied");
-        setError("Lokasi harus diaktifkan untuk melanjutkan. Pastikan VPN dimatikan dan izin lokasi diberikan.");
+        setError("Lokasi ditolak browser. Cek pengaturan izin lokasi di browser Anda.");
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
@@ -77,10 +77,6 @@ export default function LoginPage() {
 
   async function handleTamu(e: React.FormEvent) {
     e.preventDefault();
-    if (!lokasi) {
-      setError("Aktifkan lokasi terlebih dahulu");
-      return;
-    }
     if (!form.nama || !form.keperluan) {
       setError("Nama dan keperluan wajib diisi");
       return;
@@ -96,8 +92,8 @@ export default function LoginPage() {
           nama: form.nama,
           instansi: form.instansi,
           keperluan: form.keperluan,
-          lat: lokasi.lat,
-          lng: lokasi.lng,
+          lat: lokasi?.lat ?? null,
+          lng: lokasi?.lng ?? null,
           device: deviceInfo,
         }),
       });
@@ -175,18 +171,18 @@ export default function LoginPage() {
             </form>
           ) : (
             <form onSubmit={handleTamu} className="space-y-4">
-              {/* Lokasi */}
-              <div className={`p-3 rounded-xl border-2 ${lokasiStatus === "ok" ? "border-emerald-300 bg-emerald-50" : lokasiStatus === "denied" ? "border-rose-300 bg-rose-50" : "border-gray-200"}`}>
+              <div className={`p-3 rounded-xl border-2 ${lokasiStatus === "ok" ? "border-emerald-300 bg-emerald-50" : lokasiStatus === "denied" ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-gray-50"}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MapPin size={16} className={lokasiStatus === "ok" ? "text-emerald-600" : "text-gray-400"} />
-                    <span className="text-sm font-medium">
-                      {lokasiStatus === "ok" ? "Lokasi terdeteksi ✓" : lokasiStatus === "denied" ? "Lokasi ditolak" : lokasiStatus === "loading" ? "Mendeteksi..." : "Lokasi belum diaktifkan"}
+                    <span className="text-sm font-medium text-gray-700">
+                      {lokasiStatus === "ok" ? "✓ Lokasi terdeteksi" : lokasiStatus === "denied" ? "Lokasi ditolak" : lokasiStatus === "loading" ? "Mendeteksi..." : "Aktifkan lokasi (opsional)"}
                     </span>
                   </div>
                   {lokasiStatus !== "ok" && (
-                    <button type="button" onClick={mintaLokasi} disabled={lokasiStatus === "loading"} className="text-xs bg-primary-600 text-white px-3 py-1.5 rounded-lg font-medium">
-                      {lokasiStatus === "loading" ? <Loader2 size={12} className="animate-spin" /> : "Aktifkan"}
+                    <button type="button" onClick={mintaLokasi} disabled={lokasiStatus === "loading"} className="text-xs bg-primary-600 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
+                      {lokasiStatus === "loading" ? <Loader2 size={12} className="animate-spin" /> : null}
+                      {lokasiStatus === "loading" ? "..." : "Aktifkan"}
                     </button>
                   )}
                 </div>
@@ -207,11 +203,11 @@ export default function LoginPage() {
                 <label className="label">Keperluan <span className="text-rose-500">*</span></label>
                 <textarea value={form.keperluan} onChange={e => setForm(p => ({ ...p, keperluan: e.target.value }))} className="input-field" rows={2} placeholder="Tujuan kunjungan Anda" required />
               </div>
-              <button type="submit" disabled={loading || lokasiStatus !== "ok"} className="btn-primary w-full justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3">
                 {loading && <Loader2 size={16} className="animate-spin" />}
                 {loading ? "Memproses..." : "Masuk sebagai Tamu"}
               </button>
-              <p className="text-xs text-gray-400 text-center">Lokasi wajib diaktifkan. Matikan VPN sebelum melanjutkan.</p>
+              <p className="text-xs text-gray-400 text-center">Lokasi bersifat opsional tapi sangat dianjurkan untuk keamanan.</p>
             </form>
           )}
         </div>
